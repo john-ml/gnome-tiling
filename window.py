@@ -1,9 +1,40 @@
 from util import *
 from typing import *
 
+# a movement of a window, given by offsets for each edge of the window
+class Crawl:
+  def __init__(self, left:int, right:int, up:int, down:int) -> None:
+    self.left = left
+    self.right = right
+    self.up = up
+    self.down = down
+
+  def __str__(self):
+    return 'Crawl({}, {}, {}, {})'.format(self.left, self.right, self.up, self.down)
+
+  # return a flipped crawl
+  def transpose(self):
+    return Crawl(-self.right, -self.left, -self.down, -self.up)
+
+  # combine two movements
+  def __add__(self, other):
+    return Crawl(
+      self.left + other.left,
+      self.right + other.right,
+      self.up + other.up,
+      self.down + other.down)
+
+  def __eq__(self, other):
+    return self.left == other.left \
+       and self.right == other.right \
+       and self.up == other.up \
+       and self.down == other.down
+
+Crawl.empty = Crawl(0, 0, 0, 0)
+
 # position and dimensions of a single window
 class Window:
-  def __init__(self, left:int, top:int, width:int, height:int):
+  def __init__(self, left:int, top:int, width:int, height:int) -> None:
     # geometry/desktop
     self.left = left
     self.top = top
@@ -19,7 +50,7 @@ class Window:
     self._height = height
 
   def __str__(self) -> str:
-    return "Window({}, {}, {}, {})".format(self.left, self.top, self.width, self.height)
+    return 'Window({}, {}, {}, {})'.format(self.left, self.top, self.width, self.height)
 
   # compute area relative to pixels on screen
   def area(self) -> float:
@@ -45,9 +76,39 @@ class Window:
     return Window(x1, y1, x2 - x1, y2 - y1) if x1 < x2 and y1 < y2 else None
 
   # check whether a point is in the window
-  def contains(self, left, top) -> bool:
+  def contains(self, left:int, top:int) -> bool:
     return self.left <= left and left <= self.left + self.width \
        and self.top <= top and top <= self.top + self.height
+
+  # return a crawl that will move this window away from another
+  def get_crawl(self, other) -> Crawl:
+    (x1, y1), (x2, y2) = self.intersect_rect(other)
+    if x1 >= x2 or y1 >= y2:
+      return Crawl.empty # no overlap
+
+    (u1, v1), (u2, v2) = (self.left, self.top), (self.left + self.width, self.top + self.height)
+    left = right = up = down = 0
+
+    if u1 < x1 and x2 < u2 and v1 < y1 and y2 < v2: # overlap is inside this window
+      return Crawl.empty
+    else: # overlap lies on one of the corners
+      w = u2 - u1
+      h = v2 - v1
+      if x1 == self.left:
+        left -= w / 2
+        right += w / 2
+      elif x2 == self.left + self.width:
+        left += w / 2
+        right -= w / 2
+
+      if y1 == self.top:
+        up -= h / 2
+        down += h / 2
+      elif y2 == self.top + self.height:
+        up += h / 2
+        down -= h / 2
+
+    return Crawl(left, right, up, down)
 
   # maximize
   def maximize(self):
@@ -84,14 +145,14 @@ class Window:
     return self.resize(self.width + width, self.height + height)
 
   # move edges outwards by each of the four offsets
-  def crawl(self, left:int, right:int, up:int, down:int):
+  def crawl(self, crawl:Crawl):
     return self \
-      .stretch(left + right, up + down) \
-      .nudge(-left, -up)
+      .stretch(crawl.left + crawl.right, crawl.up + crawl.down) \
+      .nudge(-crawl.left, -crawl.up)
 
   # check whether a major adjustment was made
   def adjusted(self) -> bool:
-    return not is_close(left, self._left) \
-        or not is_close(top, self._top) \
-        or not is_close(width, self._width) \
-        or not is_close(height, self._height)
+    return not is_close(self.left, self._left) \
+        or not is_close(self.top, self._top) \
+        or not is_close(self.width, self._width) \
+        or not is_close(self.height, self._height)
