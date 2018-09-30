@@ -1,3 +1,6 @@
+from util import *
+from typing import *
+
 
   # apply the window properties to the actual window
   def render(self):
