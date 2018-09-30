@@ -30,6 +30,11 @@ class Window:
     y2 = min(self.top + self.height, other.top + other.height)
     return (x2 - x1) * (y2 - y1) if x1 < x2 and y1 < y2 else 0
 
+  # check whether a point is in the window
+  def contains(self, left, top) -> bool:
+    return self.left <= left and left <= self.left + self.width \
+       and self.top <= top and top <= self.top + self.height
+
   # maximize
   def maximize(self):
     self.maximized = True
@@ -66,7 +71,7 @@ class Window:
 
   # check whether a major adjustment was made
   def adjusted(self) -> bool:
-    return not is_close(left, self._left)
-        or not is_close(top, self._top)
-        or not is_close(width, self._width)
+    return not is_close(left, self._left) \
+        or not is_close(top, self._top) \
+        or not is_close(width, self._width) \
         or not is_close(height, self._height)
