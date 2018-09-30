@@ -1,7 +1,7 @@
 from util import *
 from typing import *
 
-# window data structure
+# position and dimensions of a single window
 class Window:
   def __init__(self, left:int, top:int, width:int, height):
     # geometry/desktop
@@ -17,6 +17,18 @@ class Window:
     self._top = top
     self._width = width
     self._height = height
+
+  # compute area
+  def area(self) -> int:
+    return self.width * self.height
+
+  # compute overlap with another window
+  def overlap(self, other) -> int:
+    x1 = max(self.left, other.left)
+    y1 = max(self.top, other.top)
+    x2 = min(self.left + self.width, other.left + other.width)
+    y2 = min(self.top + self.height, other.top + other.height)
+    return (x2 - x1) * (y2 - y1) if x1 < x2 and y1 < y2 else 0
 
   # maximize
   def maximize(self):
@@ -54,7 +66,7 @@ class Window:
 
   # check whether a major adjustment was made
   def adjusted(self) -> bool:
-    return is_close(left, self._left)
-        or is_close(top, self._top)
-        or is_close(width, self._width)
-        or is_close(height, self._height)
+    return not is_close(left, self._left)
+        or not is_close(top, self._top)
+        or not is_close(width, self._width)
+        or not is_close(height, self._height)
