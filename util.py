@@ -5,6 +5,7 @@ def dimensions(dim:int) -> int:
   return int(os.popen(s).read())
 screen_width = dimensions(0)
 screen_height = dimensions(1)
+screen_pixels = screen_width * screen_height
 del dimensions
 
 # clamp an x coordinate by screen width
