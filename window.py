@@ -18,17 +18,18 @@ class Window:
     self._width = width
     self._height = height
 
-  # compute area
-  def area(self) -> int:
-    return self.width * self.height
+  # compute area relative to pixels on screen
+  def area(self) -> float:
+    return self.width * self.height / screen_pixels
 
   # compute overlap with another window
-  def overlap(self, other) -> int:
+  def overlap(self, other) -> float:
     x1 = max(self.left, other.left)
     y1 = max(self.top, other.top)
     x2 = min(self.left + self.width, other.left + other.width)
     y2 = min(self.top + self.height, other.top + other.height)
-    return (x2 - x1) * (y2 - y1) if x1 < x2 and y1 < y2 else 0
+    pixels = (x2 - x1) * (y2 - y1) if x1 < x2 and y1 < y2 else 0
+    return pixels / screen_pixels
 
   # check whether a point is in the window
   def contains(self, left, top) -> bool:
