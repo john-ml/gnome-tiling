@@ -1,31 +1,8 @@
 # command line utility to manage tiled windows
 from util import *
-from tree import *
+from manager import *
 import sys
 from pathlib import Path
-
-# force all workspaces to tile properly
-def reset() -> Dict[int, Tree]:
-  windows = extract_windows()
-  trees = {}
-  for workspace, ids in windows.items():
-    trees[workspace] = Tree.from_list(ids)
-    trees[workspace].render()
-  return trees
-
-# string representation of the workspace trees
-def stringify(trees : Dict[int, Tree]) -> str:
-  return '\n'.join('{} {}'.format(workspace, tree.rpn()) for workspace, tree in trees.items())
-
-# extract workspace trees from string representation
-def parse(s:str) -> Dict[int, Tree]:
-  lines = (a.split() for a in s.split('\n'))
-  workspaces:Dict[int, Tree] = {}
-  for l in lines:
-    workspace = int(l[0])
-    rpn = ' '.join(l[1:])
-    workspaces[workspace] = Tree.from_rpn(rpn)
-  return workspaces
 
 # print help thing
 def print_usage():
@@ -42,7 +19,9 @@ if __name__ == '__main__':
 
   # force tile all windows & initialize stash
   if option == 'reset':
-    open(stash, 'w').write(stringify(reset()))
+    manager = Manager.from_reality()
+    manager.render()
+    open(stash, 'w').write(repr(manager))
     exit()
 
   if not Path(stash).is_file():
@@ -50,12 +29,11 @@ if __name__ == '__main__':
     exit()
 
   with open(stash, 'r') as f:
-    trees = parse(f.read())
+    manager = Manager.from_str(f.read())
 
   # list the workspace trees
   if option == 'list':
-    for workspace, tree in trees.items():
-      print('{}: {}'.format(workspace, tree))
+    print(manager)
 
   else:
     print('Unrecognized option `{}`'.format(option))

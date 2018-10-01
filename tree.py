@@ -16,7 +16,7 @@ class Tree:
 
   # apply the window properties to the actual windows
   # all values range from 0.0 to 1.0
-  def render(self, x:float, y:float, w:float, h:float):
+  def render(self, x:float, y:float, w:float, h:float) -> None:
     pass
 
   # construct from list
