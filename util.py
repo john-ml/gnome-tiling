@@ -1,30 +1,53 @@
+# hard-coded constant for my computer # TODO figure out how to detect this?
+# the height of the top bar and title bars
+top_bar_height = 27
+
 # screen resolution
 def dimensions(dim:int) -> int:
   import os
   s = "xdpyinfo | awk '/dimensions/{print $2}' | sed 's/x/ /' | awk '//{print $%d}'" % (dim + 1)
   return int(os.popen(s).read())
 screen_width = dimensions(0)
-screen_height = dimensions(1)
+screen_height = dimensions(1) - top_bar_height
 screen_pixels = screen_width * screen_height
 del dimensions
 
-# clamp an x coordinate by screen width
-def clamp_x(x:int) -> int:
-  return min(max(x, 0), screen_width)
-
-# clamp a y coordinate by screen height
-def clamp_y(y:int) -> int:
-  return min(max(y, 0), screen_height)
-
-# clamp a width by screen resolution & left margin 
-def clamp_width(width:int, left:int) -> int:
-  return min(max(width, 0), screen_width - left)
-
-# clamp a height by screen resolution & top margin
-def clamp_height(height:int, top:int) -> int:
-  return min(max(height, 0), screen_height - top)
-
 # check if two values are "close enough".
-# if so, don't need to issue a wmctrl command to adjust 
-def is_close(a:int, b:int) -> bool:
-  return a == b
+def is_close(a:float, b:float) -> bool:
+  return abs(a - b) < 0.01
+
+# run a shell command
+def run(s:str, debug=False) -> None:
+  from os import system
+  if debug:
+    print(s)
+  system(s)
+
+# extract { workspace number: [window id] } using wmctrl
+def extract_windows(debug=False) -> None:
+  from os import popen
+
+  # extract window information
+  # output is 1 line per window, containing:
+  #   id workspace left top width height username title
+  # just need id & workspace
+  s = 'wmctrl -l -G'
+  if debug:
+    print(s)
+  entries = (l.split() for l in popen(s).read().split('\n'))
+
+  # need to filter out:
+  #   the empty list from the newline at the end of the input
+  #   the Desktop "window" that shows up and takes up all of workspace 0
+  entries = filter(lambda a: len(a) >= 8 and not ' '.join(a[7:]) == 'Desktop', entries)
+
+  # construct workspace dict
+  workspaces = {}
+  for entry in entries:
+    id, workspace = entry[:2]
+    if workspace not in workspaces:
+      workspaces[workspace] = [id]
+    else:
+      workspaces[workspace].append(id)
+
+  return workspaces
