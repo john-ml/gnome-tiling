@@ -1,12 +1,22 @@
 from util import *
 from typing import *
 
-DEBUG = True
-
 # a tree of splits
 class Tree:
+  def __str__(self):
+    pass
+
+  # return a representation of the tree in rpn
+  def rpn(self):
+    pass
+
+  # apply the window properties to the actual windows
+  # all values range from 0.0 to 1.0
+  def render(self, x, y, w,  h):
+    pass
+
   @staticmethod
-  def from_list(l:List[int], vertical=True):
+  def from_list(l : List[int], vertical=True):
     if len(l) == 0:
       raise ValueError('from_list of empty list')
     if len(l) == 1:
@@ -17,6 +27,25 @@ class Tree:
       Tree.from_list(l[m:], not vertical),
       vertical)
 
+  @staticmethod
+  def from_rpn(rpn:str):
+    tokens = rpn.split()
+    stack:List[Tree] = []
+    i = 0
+    while i < len(tokens):
+      t = tokens[i]
+      a = tokens[i + 1]
+      if t == 'i':
+        stack.append(Leaf(int(a)))
+      elif t == 'v' or t == 'h':
+        r = stack.pop()
+        l = stack.pop()
+        stack.append(Split(l, r, t == 'v', float(a)))
+      i += 2
+    if len(stack) != 1:
+      raise ValueError('Failed to construct tree from rpn `{}`'.format(rpn))
+    return stack[0]
+
 # a window id
 class Leaf(Tree):
   def __init__(self, id):
@@ -24,7 +53,10 @@ class Leaf(Tree):
     self.dirty = True # not yet rendered
 
   def __str__(self):
-    return 'Leaf(' + str(self.id) + ')'
+    return 'Leaf(' + hex(self.id) + ')'
+
+  def rpn(self):
+    return '{} {}'.format('i', self.id)
 
   def render(self, x=0.0, y=0.0, w=1.0, h=1.0):
     if not self.dirty:
@@ -36,7 +68,7 @@ class Leaf(Tree):
            and is_close(w, 1.0) \
            and is_close(h, 1.0)
     run('wmctrl -i -r {} -b {},maximized_horz,maximized_vert'.format(
-         self.id, 'add' if maximize else 'remove'), DEBUG)
+         self.id, 'add' if maximize else 'remove'))
 
     # if not taking up entire screen, set window to proper size
     if not maximize:
@@ -45,7 +77,7 @@ class Leaf(Tree):
         int(x * screen_width),
         int(top_bar_height + y * screen_height),
         int(w * screen_width),
-        int(h * screen_height - top_bar_height)), DEBUG)
+        int(h * screen_height - top_bar_height)))
 
     self.dirty = False
 
@@ -58,13 +90,21 @@ class Split(Tree):
     self.right = right
     self.dirty = left.dirty or right.dirty
 
-  def __str__(self):
-    return '{}('.format('Vertical' if self.vertical else 'Horizontal') \
-         + str(self.left) + ', ' + str(self.right) + ')'
+  def __str__(self) -> str:
+    return '{}({}, {}, {})'.format(
+      'Vertical' if self.vertical else 'Horizontal',
+      self.ratio,
+      self.left,
+      self.right)
 
-  # apply the window properties to the actual windows
-  # all values range from 0.0 to 1.0
-  def render(self, left=0.0, top=0.0, width=1.0, height=1.0):
+  def rpn(self) -> str:
+    return '{} {} {} {}'.format(
+      self.left.rpn(),
+      self.right.rpn(),
+      'v' if self.vertical else 'h',
+      self.ratio)
+
+  def render(self, left=0.0, top=0.0, width=1.0, height=1.0) -> None:
     if not self.dirty:
       return
 
@@ -90,12 +130,3 @@ class Split(Tree):
     self.left.render(x1, y1, w1, h1)
     self.right.render(x2, y2, w2, h2)
     self.dirty = False
-
-# force all workspaces to tile properly
-def tile_all() -> None:
-  windows = extract_windows()
-  for workspace, ids in windows.items():
-    Tree.from_list(ids).render()
-
-if __name__ == '__main__':
-  tile_all()

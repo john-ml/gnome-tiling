@@ -1,3 +1,7 @@
+from typing import *
+
+DEBUG = True
+
 # hard-coded constant for my computer # TODO figure out how to detect this?
 # the height of the top bar and title bars
 top_bar_height = 27
@@ -17,14 +21,14 @@ def is_close(a:float, b:float) -> bool:
   return abs(a - b) < 0.01
 
 # run a shell command
-def run(s:str, debug=False) -> None:
+def run(s:str) -> None:
   from os import system
-  if debug:
+  if DEBUG:
     print(s)
   system(s)
 
 # extract { workspace number: [window id] } using wmctrl
-def extract_windows(debug=False) -> None:
+def extract_windows() -> Dict[int, List[int]]:
   from os import popen
 
   # extract window information
@@ -32,7 +36,7 @@ def extract_windows(debug=False) -> None:
   #   id workspace left top width height username title
   # just need id & workspace
   s = 'wmctrl -l -G'
-  if debug:
+  if DEBUG:
     print(s)
   entries = (l.split() for l in popen(s).read().split('\n'))
 
@@ -42,9 +46,9 @@ def extract_windows(debug=False) -> None:
   entries = filter(lambda a: len(a) >= 8 and not ' '.join(a[7:]) == 'Desktop', entries)
 
   # construct workspace dict
-  workspaces = {}
+  workspaces:Dict[int, List[int]] = {}
   for entry in entries:
-    id, workspace = entry[:2]
+    id, workspace = int(entry[0], 16), int(entry[1], 16)
     if workspace not in workspaces:
       workspaces[workspace] = [id]
     else:
