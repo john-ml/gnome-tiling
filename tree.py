@@ -6,17 +6,25 @@ class Tree:
   def __str__(self):
     pass
 
-  # return a set of ids contained in this tree
+  # the set of ids contained in this tree
   def ids(self) -> Set[int]:
     pass
 
-  # return a representation of the tree in rpn
+  # a representation of the tree in rpn
   def rpn(self) -> str:
     pass
 
-  # apply the window properties to the actual windows
+  # (window id, area) of window with the largest area, assuming initial bounding box (w, h)
+  def largest(self, best=None, w=1.0, h=1.0) -> Tuple[int, float]:
+    pass
+
+  # apply the window properties to the actual windows, assuming initial bounding box (x, y, w, h)
   # all values range from 0.0 to 1.0
-  def render(self, x:float, y:float, w:float, h:float) -> None:
+  def render(self, x=0.0, y=0.0, w=1.0, h=1.0) -> None:
+    pass
+
+  # return an updated tree with a new window inserted
+  def insert(self, i:int, vertical=True):
     pass
 
   # construct from list
@@ -67,6 +75,18 @@ class Leaf(Tree):
   def rpn(self) -> str:
     return '{} {}'.format('i', self.id)
 
+  def largest(self, best=None, w=1.0, h=1.0) -> Tuple[int, float]:
+    area = w * h
+    if best is None:
+      return self.id, area
+    i, area2 = best
+    return (self.id, area) if area >= area2 else best
+
+  # mark as dirty
+  def touch(self):
+    self.dirty = True
+    return self
+
   def render(self, x=0.0, y=0.0, w=1.0, h=1.0) -> None:
     if not self.dirty:
       return
@@ -89,6 +109,9 @@ class Leaf(Tree):
         int(h * screen_height - top_bar_height)))
 
     self.dirty = False
+
+  def insert(self, i:int, vertical=True) -> Tree:
+    return Split(self, Leaf(i), vertical) if i not in self.ids() else self
 
 # a split of the rectangular region of the screen
 class Split(Tree):
@@ -116,11 +139,10 @@ class Split(Tree):
       'v' if self.vertical else 'h',
       self.ratio)
 
-  def render(self, left=0.0, top=0.0, width=1.0, height=1.0) -> None:
-    if not self.dirty:
-      return
+  # compute (x1, y1, w1, h1) and (x2, y2, w2, h2) for the two children
+  def subrects(self, left=0.0, top=0.0, width=1.0, height=1.0) -> \
+    Tuple[Tuple[float, float, float, float], Tuple[float, float, float, float]]:
 
-    # compute (x1, y1, w1, h1) and (x2, y2, w2, h2) for the two children
     x1, y1 = left, top
     if self.vertical:
       h1 = h2 = height
@@ -139,6 +161,30 @@ class Split(Tree):
       x2 = x1
       y2 = y1 + h1
 
+    return (x1, y1, w1, h1), (x2, y2, w2, h2)
+
+  def largest(self, best=None, w=1.0, h=1.0) -> Tuple[int, float]:
+    (_, _, w1, h1), (_, _, w2, h2) = self.subrects(0, 0, w, h)
+    return self.right.largest(self.left.largest(best, w1, h1), w2, h2)
+
+  def render(self, left=0.0, top=0.0, width=1.0, height=1.0) -> None:
+    if not self.dirty:
+      return
+    (x1, y1, w1, h1), (x2, y2, w2, h2) = self.subrects(left, top, width, height)
     self.left.render(x1, y1, w1, h1)
     self.right.render(x2, y2, w2, h2)
     self.dirty = False
+
+  def insert(self, i:int, vertical=True) -> Tree:
+    max_id, _ = self.largest()
+
+    def insert_at(a:Tree, vertical=True) -> Tuple[Tree, bool]:
+      if type(a) is Leaf:
+        return (Split(a.touch(), Leaf(i), vertical), True) if a.id == max_id else (a, False)
+      l, done = insert_at(a.left, not a.vertical)
+      if done:
+        return Split(l, a.right, a.vertical, a.ratio), True
+      r, done = insert_at(a.right, not a.vertical)
+      return Split(l, r, a.vertical, a.ratio), done
+
+    return insert_at(self)[0]

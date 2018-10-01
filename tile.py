@@ -38,3 +38,5 @@ if __name__ == '__main__':
   else:
     print('Unrecognized option `{}`'.format(option))
     print_usage()
+
+    print(manager.workspaces[2].insert(5))

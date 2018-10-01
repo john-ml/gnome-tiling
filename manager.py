@@ -4,7 +4,7 @@ from typing import *
 
 # a set of workspaces. essentially Dict[int, Tree]
 class Manager:
-  def __init__(self, workspaces : Dict[int, Tree]):
+  def __init__(self, workspaces : Dict[int, Tree]) -> None:
     self.workspaces = workspaces
 
   def __str__(self) -> str:
@@ -15,6 +15,11 @@ class Manager:
     return '\n'.join(
       '{} {}'.format(workspace, tree.rpn()) for workspace, tree in self.workspaces.items())
 
+  # insert a new window
+  def insert(self, workspace:int, i:int):
+    self.workspaces[workspace] = self.workspaces[workspace].insert(i)
+    return self
+
   # apply the stored window properties to the actual windows
   def render(self) -> None:
     for _, workspace in self.workspaces.items():
@@ -23,16 +28,11 @@ class Manager:
   # construct from the actual current window configuration
   @staticmethod
   def from_reality():
-    from os import popen
-
     # extract window information
     # output is 1 line per window, containing:
     #   id workspace left top width height username title
     # just need id & workspace
-    s = 'wmctrl -l -G'
-    if DEBUG:
-      print(s)
-    entries = (l.split() for l in popen(s).read().split('\n'))
+    entries = (l.split() for l in run('wmctrl -l -G').split('\n'))
 
     # need to filter out:
     #   the empty list from the newline at the end of the input
