@@ -6,13 +6,17 @@ class Tree:
   def __str__(self):
     pass
 
+  # return a set of ids contained in this tree
+  def ids(self) -> Set[int]:
+    pass
+
   # return a representation of the tree in rpn
-  def rpn(self):
+  def rpn(self) -> str:
     pass
 
   # apply the window properties to the actual windows
   # all values range from 0.0 to 1.0
-  def render(self, x, y, w,  h):
+  def render(self, x:float, y:float, w:float, h:float):
     pass
 
   @staticmethod
@@ -55,10 +59,13 @@ class Leaf(Tree):
   def __str__(self):
     return 'Leaf(' + hex(self.id) + ')'
 
-  def rpn(self):
+  def ids(self) -> Set[int]:
+    return set([self.id])
+
+  def rpn(self) -> str:
     return '{} {}'.format('i', self.id)
 
-  def render(self, x=0.0, y=0.0, w=1.0, h=1.0):
+  def render(self, x=0.0, y=0.0, w=1.0, h=1.0) -> None:
     if not self.dirty:
       return
 
@@ -96,6 +103,9 @@ class Split(Tree):
       self.ratio,
       self.left,
       self.right)
+
+  def ids(self) -> Set[int]:
+    return self.left.ids() | self.right.ids()
 
   def rpn(self) -> str:
     return '{} {} {} {}'.format(

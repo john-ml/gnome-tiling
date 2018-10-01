@@ -8,9 +8,9 @@ top_bar_height = 27
 
 # screen resolution
 def dimensions(dim:int) -> int:
-  import os
+  from os import popen
   s = "xdpyinfo | awk '/dimensions/{print $2}' | sed 's/x/ /' | awk '//{print $%d}'" % (dim + 1)
-  return int(os.popen(s).read())
+  return int(popen(s).read())
 screen_width = dimensions(0)
 screen_height = dimensions(1) - top_bar_height
 screen_pixels = screen_width * screen_height
