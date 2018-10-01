@@ -19,6 +19,7 @@ class Tree:
   def render(self, x:float, y:float, w:float, h:float):
     pass
 
+  # construct from list
   @staticmethod
   def from_list(l : List[int], vertical=True):
     if len(l) == 0:
@@ -31,6 +32,7 @@ class Tree:
       Tree.from_list(l[m:], not vertical),
       vertical)
 
+  # construct from rpn (output of .rpn())
   @staticmethod
   def from_rpn(rpn:str):
     tokens = rpn.split()

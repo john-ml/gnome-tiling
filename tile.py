@@ -45,12 +45,10 @@ if __name__ == '__main__':
     open(stash, 'w').write(stringify(reset()))
     exit()
 
-  # check that the stash exists
   if not Path(stash).is_file():
     print('Error: `{}` does not exist yet\nRun `python3 tile.py reset` first'.format(stash))
     exit()
 
-  # read in the trees from the stash
   with open(stash, 'r') as f:
     trees = parse(f.read())
 
