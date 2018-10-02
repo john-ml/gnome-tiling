@@ -27,6 +27,22 @@ class Manager:
         return w
     return None
 
+  # close the currently active window
+  def close(self):
+    a = active_window()
+    if a is None:
+      return self
+    i, w = a
+
+    if type(self.workspaces[w]) is Leaf: # close the only window in the entire workspace
+      del self.workspaces[w]
+    else:
+      self.workspaces[w] = self.workspaces[w].delete(i)
+    run('wmctrl -i -c {}'.format(i))
+
+    self.render()
+    return self
+
   # focus a window in some direction away from the current active window
   def focus(self, direction:str):
     a = active_window()

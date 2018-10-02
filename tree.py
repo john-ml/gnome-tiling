@@ -35,6 +35,10 @@ class Tree:
   def insert(self, i:int, vertical=True):
     pass
 
+  # delete window i from the tree, unless its at the root
+  def delete(self, i:int):
+    pass
+
   # helper for left_of, right_of, above, & below
   # return windows that satisfy a predicate f(x, y, w, h, x', y', w', h')
   #   x, y, w, h is geometry of window with id i
@@ -74,7 +78,7 @@ class Tree:
 
     windows = self.windows()
     _, (x, y, w, h) = next(filter(lambda a: fst(a) == i, windows))
-    def squared_distance_to(window):
+    def distance_to(window):
       _, (x1, y1, w1, h1) = window
       if not direction in {'left', 'right', 'above', 'below'}:
         raise ValueError('`{}` is not a valid direction'.format(direction))
@@ -85,7 +89,7 @@ class Tree:
         y1 - (y + h))
       return window, d
 
-    return fst(min(map(squared_distance_to, filter(lambda w: fst(w) != i, windows)), key=snd))
+    return fst(min(map(distance_to, filter(lambda w: fst(w) != i, windows)), key=snd))
 
   # construct from list
   @staticmethod
@@ -173,6 +177,9 @@ class Leaf(Tree):
   def insert(self, i:int, vertical=True) -> Tree:
     return Split(self, Leaf(i), vertical) if i not in self.ids() else self
 
+  def delete(self, i:int) -> Tree:
+    return self
+
 # a split of the rectangular region of the screen
 class Split(Tree):
   def __init__(self, left, right, vertical=True, ratio=0.5):
@@ -248,3 +255,10 @@ class Split(Tree):
       return Split(l, r, a.vertical, a.ratio), done
 
     return fst(insert_at(self))
+
+  def delete(self, i:int) -> Tree:
+    if type(self.left) is Leaf and self.left.id == i:
+      return self.right
+    if type(self.right) is Leaf and self.right.id == i:
+      return self.left
+    return Split(self.left.delete(i), self.right.delete(i), self.vertical, self.ratio)

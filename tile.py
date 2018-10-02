@@ -7,7 +7,7 @@ from pathlib import Path
 # print help thing
 def print_usage():
   print('\n'.join([
-    'Usage: python3 tile.py [reset | list | focus <direction>]',
+    'Usage: python3 tile.py [reset | list | close | focus <direction>]',
     '  direction = left | right | above | below']))
 
 if __name__ == '__main__':
@@ -41,6 +41,10 @@ if __name__ == '__main__':
     print(manager)
     for _, workspace in manager.workspaces.items():
       print(workspace.windows())
+
+  # close focused window
+  if option == 'close':
+    manager.close()
 
   # shift focus
   if option == 'focus':
