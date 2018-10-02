@@ -10,13 +10,15 @@ Requires: `xdotool` `wmctrl` `xdpyinfo` `awk` `sed`
 - `direction = left | right | above | below`
 - `workspace = 1 .. 10`
 
-### Command description
+To use as a "window manager," just make keybindings for the various actions.
+
+### Actions
 
 `init`: force window tiling and store initial configuration in `~/.tiling_configuration`
 
-`refresh`: tile newly created windows & remove windows that were closed from the stored configuration 
+`refresh`: tile newly created windows & remove windows that were closed since last refresh; store changes in `~/.tiling_configuration`
 
-`list`: print stored configuration
+`list`: pretty-print stored configuration
 
 `close`: close active window
 
