@@ -53,8 +53,8 @@ if __name__ == '__main__':
   # list the workspace trees
   elif option == 'list':
     print(manager)
-    for _, workspace in manager.workspaces.items():
-      print(workspace.windows())
+    #for _, workspace in manager.workspaces.items():
+    #  print(workspace.windows())
 
   # close focused window
   elif option == 'close':
