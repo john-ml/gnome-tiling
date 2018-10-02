@@ -8,8 +8,15 @@ from pathlib import Path
 def print_usage():
   print('\n'.join([
     'Usage: python3 tile.py [{}]'.format(' | '.join([
-      'reset', 'list', 'close', 'transpose', 'focus <direction>', 'swap <direction>'])),
-    '  direction = left | right | above | below']))
+      'reset',
+      'list',
+      'close',
+      'transpose',
+      'move <workspace>',
+      'focus <direction>',
+      'swap <direction>'])),
+    '  direction = left | right | above | below',
+    '  workspace = [1-10]']))
 
 if __name__ == '__main__':
   # to store the window state
@@ -68,6 +75,16 @@ if __name__ == '__main__':
       die()
     try:
       manager.swap(sys.argv[2])
+    except ValueError as e:
+      print(e)
+
+  # move active window to a different workspace
+  elif option == 'move':
+    if len(sys.argv) < 3:
+      print('Missing direction argument to `move`')
+      die()
+    try:
+      manager.move(int(sys.argv[2]) - 1)
     except ValueError as e:
       print(e)
 

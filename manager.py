@@ -38,7 +38,7 @@ class Manager:
       del self.workspaces[w]
     else:
       self.workspaces[w] = self.workspaces[w].delete(i)
-    run('wmctrl -i -c {}'.format(i))
+    run('wmctrl -i -c {}'.format(hex(i)))
 
     self.render()
     return self
@@ -51,6 +51,32 @@ class Manager:
     i, w = a
 
     self.workspaces[w].transpose(i)
+    self.render()
+    return self
+
+  # move active window to another workspace
+  def move(self, target:int):
+    a = active_window()
+    if a is None:
+      return self
+    i, w = a
+
+    print(w, target)
+    if w == target:
+      return
+
+    if type(self.workspaces[w]) is Leaf:
+      del self.workspaces[w]
+    else:
+      self.workspaces[w] = self.workspaces[w].delete(i)
+
+    if target not in self.workspaces:
+      self.workspaces[target] = Leaf(i)
+    else:
+      self.workspaces[target] = self.workspaces[target].insert(i)
+
+    run('wmctrl -i -r {} -t {}'.format(hex(i), target))
+
     self.render()
     return self
 

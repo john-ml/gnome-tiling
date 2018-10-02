@@ -16,8 +16,7 @@ class Tree:
 
   # mark as dirty
   def touch(self):
-    self.dirty = True
-    return self
+    pass
 
   # the set of ids contained in this tree
   def ids(self) -> Set[int]:
@@ -38,7 +37,18 @@ class Tree:
 
   # return an updated tree with a new window inserted
   def insert(self, i:int, vertical=True):
-    pass
+    max_id, _ = self.largest()
+
+    def insert_at(a:Tree, vertical=True):
+      if type(a) is Leaf:
+        return (Split(a.touch(), Leaf(i).touch(), vertical), True) if a.id == max_id else (a, False)
+      l, done = insert_at(a.left, not a.vertical)
+      if done:
+        return Split(l, a.right, a.vertical, a.ratio), True
+      r, done = insert_at(a.right, not a.vertical)
+      return Split(l, r, a.vertical, a.ratio), done
+
+    return fst(insert_at(self))
 
   # return an updated tree with Leaf(i) deleted, unless its at the root
   def delete(self, i:int):
@@ -153,6 +163,10 @@ class Leaf(Tree):
   def windows(self, x=0.0, y=0.0, w=1.0, h=1.0) -> Set[Window]:
     return {(self.id, (x, y, w, h))}
 
+  def touch(self):
+    self.dirty = True
+    return self
+
   def rpn(self) -> str:
     return '{} {} {}'.format('i', self.id, int(self.dirty))
 
@@ -173,21 +187,18 @@ class Leaf(Tree):
            and is_close(w, 1.0) \
            and is_close(h, 1.0)
     run('wmctrl -i -r {} -b {},maximized_horz,maximized_vert'.format(
-         self.id, 'add' if maximize else 'remove'))
+         hex(self.id), 'add' if maximize else 'remove'))
 
     # if not taking up entire screen, set window to proper size
     if not maximize:
       run('wmctrl -i -r {} -e 0,{},{},{},{}'.format(
-        self.id,
+        hex(self.id),
         int(x * screen_width),
         int(top_bar_height + y * screen_height),
         int(w * screen_width),
         int(h * screen_height - top_bar_height)))
 
     self.dirty = False
-
-  def insert(self, i:int, vertical=True) -> Tree:
-    return Split(self, Leaf(i), vertical) if i not in self.ids() else self
 
   def delete(self, i:int) -> Tree:
     return self
@@ -219,6 +230,12 @@ class Split(Tree):
       self.ratio,
       self.left,
       self.right)
+
+  def touch(self):
+    self.dirty = True
+    self.left.touch()
+    self.right.touch()
+    return self
 
   # compute (x1, y1, w1, h1) and (x2, y2, w2, h2) for the two children
   def subrects(self, left=0.0, top=0.0, width=1.0, height=1.0) -> Tuple[Rectangle, Rectangle]:
@@ -266,20 +283,6 @@ class Split(Tree):
     self.left.render(x1, y1, w1, h1)
     self.right.render(x2, y2, w2, h2)
     self.dirty = False
-
-  def insert(self, i:int, vertical=True) -> Tree:
-    max_id, _ = self.largest()
-
-    def insert_at(a:Tree, vertical=True) -> Tuple[Tree, bool]:
-      if type(a) is Leaf:
-        return (Split(a.touch(), Leaf(i), vertical), True) if a.id == max_id else (a, False)
-      l, done = insert_at(a.left, not a.vertical)
-      if done:
-        return Split(l, a.right, a.vertical, a.ratio), True
-      r, done = insert_at(a.right, not a.vertical)
-      return Split(l, r, a.vertical, a.ratio), done
-
-    return fst(insert_at(self))
 
   def delete(self, i:int) -> Tree:
     if type(self.left) is Leaf and self.left.id == i:
