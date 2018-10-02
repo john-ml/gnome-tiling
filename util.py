@@ -40,3 +40,7 @@ def active_window() -> Union[Tuple[int, int], None]:
 # focus a window id
 def focus_window(i:int) -> None:
   run('wmctrl -i -a {}'.format(i))
+
+# eh
+fst = lambda a: a[0]
+snd = lambda a: a[1]

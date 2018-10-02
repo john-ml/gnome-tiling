@@ -20,10 +20,47 @@ class Manager:
     self.workspaces[workspace] = self.workspaces[workspace].insert(i)
     return self
 
-  # apply the stored window properties to the actual windows
-  def render(self) -> None:
+  # get workspace on which some window exists
+  def workspace_of(self, i:int) -> Union[int, None]:
+    for w, tree in self.workspaces.items():
+      if i in tree.ids():
+        return w
+    return None
+
+  # focus a window in some direction away from the current active window
+  def focus(self, direction:str):
+    a = active_window()
+    if a is None:
+      return self
+    a = fst(a)
+
+    of = {
+      'left': lambda w: w.left_of(a),
+      'right': lambda w: w.right_of(a),
+      'above': lambda w: w.above(a),
+      'below': lambda w: w.below(a)}
+
+    if direction not in of:
+      raise ValueError('`{}` is not a valid direction'.format(direction))
+
+    w = self.workspace_of(a)
+    if w is None:
+      return self
+    w = self.workspaces[w]
+
+    nearest = w.nearest(a, of[direction](w), direction)
+    #print('direction', direction, w.right_of(a), hex(a), 'nearest', nearest)
+    if nearest is None:
+      return self
+
+    focus_window(fst(nearest))
+    return self
+
+  # apply the stored window geometries to the actual windows
+  def render(self):
     for _, workspace in self.workspaces.items():
       workspace.render()
+    return self
 
   # construct from the actual current window configuration
   @staticmethod

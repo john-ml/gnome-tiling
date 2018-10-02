@@ -1,14 +1,22 @@
 from util import *
 from typing import *
 
+# a window is an id and a bounding box (left, top, width, height)
+Rectangle = Tuple[float, float, float, float]
+Window = Tuple[int, Rectangle]
+
 # a tree of splits
 class Tree:
   def __str__(self):
     pass
 
+  # an id and bounding box (id, (x, y, w, h)) for each leaf, given initial bounding box (x, y, w, h)
+  def windows(self, x=0.0, y=0.0, w=1.0, h=1.0) -> Set[Window]:
+    pass
+
   # the set of ids contained in this tree
   def ids(self) -> Set[int]:
-    pass
+    return set(map(fst, self.windows()))
 
   # a representation of the tree in rpn
   def rpn(self) -> str:
@@ -26,6 +34,58 @@ class Tree:
   # return an updated tree with a new window inserted
   def insert(self, i:int, vertical=True):
     pass
+
+  # helper for left_of, right_of, above, & below
+  # return windows that satisfy a predicate f(x, y, w, h, x', y', w', h')
+  #   x, y, w, h is geometry of window with id i
+  #   x', y', w', h' is geometry of window being filtered
+  def filter_on_window(self, i:int, pred) -> Set[Window]:
+    if i not in self.ids():
+      return set()
+    windows = self.windows()
+    #print('i =', i)
+    _, rect = next(filter(lambda a: fst(a) == i, windows))
+    result = set(filter(lambda a: fst(a) != i and pred(*rect, *snd(a)), windows))
+    #print('result =', result)
+    return result
+
+  # windows to the left of the given id. empty set if the id is not in the tree
+  def left_of(self, i:int) -> Set[Window]:
+    return self.filter_on_window(i, lambda x, y, w, h, x1, y1, w1, h1: x1 + w1 <= x)
+
+  # windows to the right of the given id
+  def right_of(self, i:int) -> Set[Window]:
+    return self.filter_on_window(i, lambda x, y, w, h, x1, y1, w1, h1: x + w <= x1)
+
+  # windows above id
+  def above(self, i:int) -> Set[Window]:
+    return self.filter_on_window(i, lambda x, y, w, h, x1, y1, w1, h1: y1 + h1 <= y)
+
+  # windows below id
+  def below(self, i:int) -> Set[Window]:
+    return self.filter_on_window(i, lambda x, y, w, h, x1, y1, w1, h1: y + h <= y1)
+
+  # the nearest window to the given id, if it exists
+  # if direction = 'right', compute distance btwn right edge of window i & left of candidate window
+  # etc for the other directions
+  def nearest(self, i:int, windows:Set[Window], direction:str) -> Union[Window, None]:
+    if len(windows) == 0 or i not in self.ids():
+      return None
+
+    windows = self.windows()
+    _, (x, y, w, h) = next(filter(lambda a: fst(a) == i, windows))
+    def squared_distance_to(window):
+      _, (x1, y1, w1, h1) = window
+      if not direction in {'left', 'right', 'above', 'below'}:
+        raise ValueError('`{}` is not a valid direction'.format(direction))
+      d = abs(
+        x1 + w1 - x if direction == 'left' else
+        x1 - (x + w) if direction == 'right' else
+        (y1 + h1) - y if direction == 'above' else
+        y1 - (y + h))
+      return window, d
+
+    return fst(min(map(squared_distance_to, filter(lambda w: fst(w) != i, windows)), key=snd))
 
   # construct from list
   @staticmethod
@@ -69,8 +129,8 @@ class Leaf(Tree):
   def __str__(self):
     return 'Leaf(' + hex(self.id) + ')'
 
-  def ids(self) -> Set[int]:
-    return set([self.id])
+  def windows(self, x=0.0, y=0.0, w=1.0, h=1.0) -> Set[Window]:
+    return {(self.id, (x, y, w, h))}
 
   def rpn(self) -> str:
     return '{} {}'.format('i', self.id)
@@ -129,19 +189,8 @@ class Split(Tree):
       self.left,
       self.right)
 
-  def ids(self) -> Set[int]:
-    return self.left.ids() | self.right.ids()
-
-  def rpn(self) -> str:
-    return '{} {} {} {}'.format(
-      self.left.rpn(),
-      self.right.rpn(),
-      'v' if self.vertical else 'h',
-      self.ratio)
-
   # compute (x1, y1, w1, h1) and (x2, y2, w2, h2) for the two children
-  def subrects(self, left=0.0, top=0.0, width=1.0, height=1.0) -> \
-    Tuple[Tuple[float, float, float, float], Tuple[float, float, float, float]]:
+  def subrects(self, left=0.0, top=0.0, width=1.0, height=1.0) -> Tuple[Rectangle, Rectangle]:
 
     x1, y1 = left, top
     if self.vertical:
@@ -162,6 +211,17 @@ class Split(Tree):
       y2 = y1 + h1
 
     return (x1, y1, w1, h1), (x2, y2, w2, h2)
+
+  def windows(self, x=0.0, y=0.0, w=1.0, h=1.0) -> Set[Window]:
+    (x1, y1, w1, h1), (x2, y2, w2, h2) = self.subrects(x, y, w, h)
+    return self.left.windows(x1, y1, w1, h1) | self.right.windows(x2, y2, w2, h2)
+
+  def rpn(self) -> str:
+    return '{} {} {} {}'.format(
+      self.left.rpn(),
+      self.right.rpn(),
+      'v' if self.vertical else 'h',
+      self.ratio)
 
   def largest(self, best=None, w=1.0, h=1.0) -> Tuple[int, float]:
     (_, _, w1, h1), (_, _, w2, h2) = self.subrects(0, 0, w, h)
@@ -187,4 +247,4 @@ class Split(Tree):
       r, done = insert_at(a.right, not a.vertical)
       return Split(l, r, a.vertical, a.ratio), done
 
-    return insert_at(self)[0]
+    return fst(insert_at(self))
