@@ -15,7 +15,8 @@ def print_usage():
       'transpose',
       'move <workspace>',
       'focus <direction>',
-      'swap <direction>'])),
+      'swap <direction>',
+      'terminal'])),
     '  direction = left | right | above | below',
     '  workspace = [1-10]']))
 
@@ -92,6 +93,11 @@ if __name__ == '__main__':
       manager.move(int(sys.argv[2]) - 1)
     except ValueError as e:
       print(e)
+
+  # open a terminal window
+  elif option == 'terminal':
+    run('gnome-terminal')
+    manager.refresh()
 
   else:
     print('Unrecognized option `{}`'.format(option))
