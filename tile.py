@@ -7,7 +7,8 @@ from pathlib import Path
 # print help thing
 def print_usage():
   print('\n'.join([
-    'Usage: python3 tile.py [reset | list | close | transpose | focus <direction> | swap <direction>]',
+    'Usage: python3 tile.py [{}]'.format(' | '.join([
+      'reset', 'list', 'close', 'transpose', 'focus <direction>', 'swap <direction>'])),
     '  direction = left | right | above | below']))
 
 if __name__ == '__main__':

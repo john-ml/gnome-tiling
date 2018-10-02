@@ -126,13 +126,15 @@ class Tree:
     while i < len(tokens):
       t = tokens[i]
       a = tokens[i + 1]
+      dirty = int(tokens[i + 2]) == 1
       if t == 'i':
         stack.append(Leaf(int(a)))
       elif t == 'v' or t == 'h':
         r = stack.pop()
         l = stack.pop()
         stack.append(Split(l, r, t == 'v', float(a)))
-      i += 2
+      stack[-1].dirty = dirty
+      i += 3
     if len(stack) != 1:
       raise ValueError('Failed to construct tree from rpn `{}`'.format(rpn))
     return stack[0]
@@ -152,7 +154,7 @@ class Leaf(Tree):
     return {(self.id, (x, y, w, h))}
 
   def rpn(self) -> str:
-    return '{} {}'.format('i', self.id)
+    return '{} {} {}'.format('i', self.id, int(self.dirty))
 
   def largest(self, best=None, w=1.0, h=1.0) -> Tuple[int, float]:
     area = w * h
@@ -246,11 +248,12 @@ class Split(Tree):
     return self.left.windows(x1, y1, w1, h1) | self.right.windows(x2, y2, w2, h2)
 
   def rpn(self) -> str:
-    return '{} {} {} {}'.format(
+    return '{} {} {} {} {}'.format(
       self.left.rpn(),
       self.right.rpn(),
       'v' if self.vertical else 'h',
-      self.ratio)
+      self.ratio,
+      int(self.dirty))
 
   def largest(self, best=None, w=1.0, h=1.0) -> Tuple[int, float]:
     (_, _, w1, h1), (_, _, w2, h2) = self.subrects(0, 0, w, h)
