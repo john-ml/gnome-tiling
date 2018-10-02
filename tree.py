@@ -112,7 +112,9 @@ class Tree:
         y1 - (y + h))
       return window, d
 
-    return fst(min(map(distance_to, filter(lambda w: fst(w) != i, windows)), key=snd))
+    return option_map(fst, min(
+      map(distance_to, filter(lambda w: fst(w) != i, windows)),
+      key=snd, default=None))
 
   # construct from list
   @staticmethod

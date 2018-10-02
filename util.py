@@ -45,6 +45,10 @@ def focus_window(i:int) -> None:
 fst = lambda a: a[0]
 snd = lambda a: a[1]
 
+# eh!
+def option_map(f, a:Union[Any, None]) -> Any:
+  return f(a) if a is not None else None
+
 # get id and desktop for all windows
 def extract_windows() -> Dict[int, Set[int]]:
   # extract window information

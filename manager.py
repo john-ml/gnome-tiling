@@ -64,6 +64,11 @@ class Manager:
     if w == target:
       return
 
+    # compute nearest window to focus after currect active window gets moved away
+    a1 = self.workspaces[w].nearest(i, self.workspaces[w].windows(), 'left')
+    if a1 is not None:
+      run('wmctrl -i -a {}'.format(hex(fst(a1))))
+
     if type(self.workspaces[w]) is Leaf:
       del self.workspaces[w]
     else:
