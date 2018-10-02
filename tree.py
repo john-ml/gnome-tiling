@@ -297,13 +297,9 @@ class Split(Tree):
     self.dirty = self.left.dirty or self.right.dirty
 
   def transpose(self, i:int) -> bool:
-    if type(self.left) is Leaf and self.left.id == i:
+    transposable = lambda a: type(a) is Leaf and a.id == i
+    if transposable(self.left) or transposable(self.right):
       self.left.touch()
-      self.vertical = not self.vertical
-      self.dirty = True
-      return True
-
-    if type(self.right) is Leaf and self.right.id == i:
       self.right.touch()
       self.vertical = not self.vertical
       self.dirty = True
