@@ -14,6 +14,11 @@ class Tree:
   def windows(self, x=0.0, y=0.0, w=1.0, h=1.0) -> Set[Window]:
     pass
 
+  # mark as dirty
+  def touch(self):
+    self.dirty = True
+    return self
+
   # the set of ids contained in this tree
   def ids(self) -> Set[int]:
     return set(map(fst, self.windows()))
@@ -35,8 +40,12 @@ class Tree:
   def insert(self, i:int, vertical=True):
     pass
 
-  # delete window i from the tree, unless its at the root
+  # return an updated tree with Leaf(i) deleted, unless its at the root
   def delete(self, i:int):
+    pass
+
+  # swap windows i, j in place
+  def swap(self, i:int, j:int):
     pass
 
   # helper for left_of, right_of, above, & below
@@ -131,7 +140,9 @@ class Leaf(Tree):
     self.dirty = True # not yet rendered
 
   def __str__(self):
-    return 'Leaf(' + hex(self.id) + ')'
+    return '{}Leaf({})'.format(
+      '*' if self.dirty else '',
+      hex(self.id))
 
   def windows(self, x=0.0, y=0.0, w=1.0, h=1.0) -> Set[Window]:
     return {(self.id, (x, y, w, h))}
@@ -145,11 +156,6 @@ class Leaf(Tree):
       return self.id, area
     i, area2 = best
     return (self.id, area) if area >= area2 else best
-
-  # mark as dirty
-  def touch(self):
-    self.dirty = True
-    return self
 
   def render(self, x=0.0, y=0.0, w=1.0, h=1.0) -> None:
     if not self.dirty:
@@ -180,6 +186,14 @@ class Leaf(Tree):
   def delete(self, i:int) -> Tree:
     return self
 
+  def swap(self, i:int, j:int) -> None:
+    if self.id == i:
+      self.id = j
+      self.touch()
+    elif self.id == j:
+      self.id = i
+      self.touch()
+
 # a split of the rectangular region of the screen
 class Split(Tree):
   def __init__(self, left, right, vertical=True, ratio=0.5):
@@ -190,7 +204,8 @@ class Split(Tree):
     self.dirty = left.dirty or right.dirty
 
   def __str__(self) -> str:
-    return '{}({}, {}, {})'.format(
+    return '{}{}({}, {}, {})'.format(
+      '*' if self.dirty else '',
       'Vertical' if self.vertical else 'Horizontal',
       self.ratio,
       self.left,
@@ -258,7 +273,12 @@ class Split(Tree):
 
   def delete(self, i:int) -> Tree:
     if type(self.left) is Leaf and self.left.id == i:
-      return self.right
+      return self.right.touch()
     if type(self.right) is Leaf and self.right.id == i:
-      return self.left
+      return self.left.touch()
     return Split(self.left.delete(i), self.right.delete(i), self.vertical, self.ratio)
+
+  def swap(self, i:int, j:int) -> None:
+    self.left.swap(i, j)
+    self.right.swap(i, j)
+    self.dirty = self.left.dirty or self.right.dirty

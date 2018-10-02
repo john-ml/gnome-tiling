@@ -43,8 +43,11 @@ class Manager:
     self.render()
     return self
 
-  # focus a window in some direction away from the current active window
-  def focus(self, direction:str):
+  # apply some function(a:int, w:Tre, nearest:Window)
+  #   a is the id of the active window
+  #   w is the workspace
+  #   nearest is the nearest window to the active window in the given direction
+  def act_directionally(self, direction:str, f):
     a = active_window()
     if a is None:
       return self
@@ -69,7 +72,24 @@ class Manager:
     if nearest is None:
       return self
 
-    focus_window(fst(nearest))
+    #print('before', w)
+    f(a, w, nearest)
+    #print('after', w)
+    return self
+
+  # focus a window in some direction away from the current active window
+  def focus(self, direction:str):
+    return self.act_directionally(
+      direction,
+      lambda _, __, nearest: focus_window(fst(nearest)))
+
+  # swap with a window in some direction away from the current active window
+  def swap(self, direction:str):
+    self.act_directionally(
+      direction,
+      lambda a, workspace, nearest: workspace.swap(a, fst(nearest)))
+
+    self.render()
     return self
 
   # apply the stored window geometries to the actual windows

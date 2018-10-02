@@ -7,7 +7,7 @@ from pathlib import Path
 # print help thing
 def print_usage():
   print('\n'.join([
-    'Usage: python3 tile.py [reset | list | close | focus <direction>]',
+    'Usage: python3 tile.py [reset | list | close | focus <direction> | swap <direction>]',
     '  direction = left | right | above | below']))
 
 if __name__ == '__main__':
@@ -43,11 +43,11 @@ if __name__ == '__main__':
       print(workspace.windows())
 
   # close focused window
-  if option == 'close':
+  elif option == 'close':
     manager.close()
 
   # shift focus
-  if option == 'focus':
+  elif option == 'focus':
     if len(sys.argv) < 3:
       print('Missing direction argument to `focus`')
       die()
@@ -56,10 +56,18 @@ if __name__ == '__main__':
     except ValueError as e:
       print(e)
 
+  # swap focused window position
+  elif option == 'swap':
+    if len(sys.argv) < 3:
+      print('Missing direction argument to `swap`')
+      die()
+    try:
+      manager.swap(sys.argv[2])
+    except ValueError as e:
+      print(e)
+
   else:
     print('Unrecognized option `{}`'.format(option))
     print_usage()
 
-    #print(manager.workspaces[2].left_of(36164249))
-
-  #die() # save changes for next run
+  die() # save changes for next run
