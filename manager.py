@@ -61,7 +61,6 @@ class Manager:
       return self
     i, w = a
 
-    print(w, target)
     if w == target:
       return
 
@@ -135,33 +134,34 @@ class Manager:
       workspace.render()
     return self
 
+  # discover differences between current state & stored stash, and update accordingly
+  def refresh(self):
+    for w, ids in extract_windows().items():
+      # brand new workspace
+      if w not in self.workspaces:
+        self.workspaces[w] = Tree.from_list(list(ids))
+        continue
+
+      old_ids = self.workspaces[w].ids()
+
+      # remove nonexistent windows
+      for i in old_ids - ids:
+        self.workspaces[w] = self.workspaces[w].delete(i)
+
+      # add new windows
+      for i in ids - old_ids:
+        self.workspaces[w] = self.workspaces[w].insert(i)
+
+    self.render()
+    return self
+
   # construct from the actual current window configuration
   @staticmethod
   def from_reality():
-    # extract window information
-    # output is 1 line per window, containing:
-    #   id workspace left top width height username title
-    # just need id & workspace
-    entries = (l.split() for l in run('wmctrl -l -G').split('\n'))
-
-    # need to filter out:
-    #   the empty list from the newline at the end of the input
-    #   the Desktop "window" that shows up and takes up all of workspace 0
-    entries = filter(lambda a: len(a) >= 8 and not ' '.join(a[7:]) == 'Desktop', entries)
-
-    # construct workspace dict
-    lists:Dict[int, List[int]] = {}
-    for entry in entries:
-      id, workspace = int(entry[0], 16), int(entry[1], 16)
-      if workspace not in lists:
-        lists[workspace] = [id]
-      else:
-        lists[workspace].append(id)
-
     # construct tiled trees for each workspace
     workspaces:Dict[int, Tree] = {}
-    for workspace, ids in lists.items():
-      workspaces[workspace] = Tree.from_list(ids)
+    for workspace, ids in extract_windows().items():
+      workspaces[workspace] = Tree.from_list(list(ids))
 
     return Manager(workspaces)
 

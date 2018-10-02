@@ -44,3 +44,27 @@ def focus_window(i:int) -> None:
 # eh
 fst = lambda a: a[0]
 snd = lambda a: a[1]
+
+# get id and desktop for all windows
+def extract_windows() -> Dict[int, Set[int]]:
+  # extract window information
+  # output is 1 line per window, containing:
+  #   id workspace left top width height username title
+  # just need id & workspace
+  entries = (l.split() for l in run('wmctrl -l -G').split('\n'))
+
+  # need to filter out:
+  #   the empty list from the newline at the end of the input
+  #   the Desktop "window" that shows up and takes up all of workspace 0
+  entries = filter(lambda a: len(a) >= 8 and not ' '.join(a[7:]) == 'Desktop', entries)
+
+  # construct workspace dict
+  result:Dict[int, Set[int]] = {}
+  for entry in entries:
+    i, workspace = int(entry[0], 16), int(entry[1], 16)
+    if workspace not in result:
+      result[workspace] = {i}
+    else:
+      result[workspace] |= {i}
+
+  return result

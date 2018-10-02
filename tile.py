@@ -8,7 +8,8 @@ from pathlib import Path
 def print_usage():
   print('\n'.join([
     'Usage: python3 tile.py [{}]'.format(' | '.join([
-      'reset',
+      'init',
+      'refresh',
       'list',
       'close',
       'transpose',
@@ -32,20 +33,24 @@ if __name__ == '__main__':
   option = sys.argv[1]
 
   # force tile all windows & initialize stash
-  if option == 'reset':
+  if option == 'init':
     manager = Manager.from_reality()
     manager.render()
     die()
 
   if not Path(stash).is_file():
-    print('Error: `{}` does not exist yet\nRun `python3 tile.py reset` first'.format(stash))
+    print('Error: `{}` does not exist yet\nRun `python3 tile.py init` first'.format(stash))
     exit()
 
   with open(stash, 'r') as f:
     manager = Manager.from_str(f.read())
 
+  # account for new windows/deleted windows
+  if option == 'refresh':
+    manager.refresh()
+
   # list the workspace trees
-  if option == 'list':
+  elif option == 'list':
     print(manager)
     for _, workspace in manager.workspaces.items():
       print(workspace.windows())
