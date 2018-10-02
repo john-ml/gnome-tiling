@@ -1,6 +1,6 @@
 # gnome-tile
 
-Command-line utility for pretending that GNOME is a tiling window manager.
+Command-line utility for pretending that GNOME has tiling windows.
 
 Requires: `xdotool` `wmctrl` `xdpyinfo` `awk` `sed`
 
