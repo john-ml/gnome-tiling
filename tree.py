@@ -48,6 +48,10 @@ class Tree:
   def swap(self, i:int, j:int):
     pass
 
+  # change the axis of the parent node holding window i
+  def transpose(self, i:int):
+    pass
+
   # helper for left_of, right_of, above, & below
   # return windows that satisfy a predicate f(x, y, w, h, x', y', w', h')
   #   x, y, w, h is geometry of window with id i
@@ -194,6 +198,9 @@ class Leaf(Tree):
       self.id = i
       self.touch()
 
+  def transpose(self, i:int):
+    pass
+
 # a split of the rectangular region of the screen
 class Split(Tree):
   def __init__(self, left, right, vertical=True, ratio=0.5):
@@ -282,3 +289,21 @@ class Split(Tree):
     self.left.swap(i, j)
     self.right.swap(i, j)
     self.dirty = self.left.dirty or self.right.dirty
+
+  def transpose(self, i:int) -> bool:
+    if type(self.left) is Leaf and self.left.id == i:
+      self.left.touch()
+      self.vertical = not self.vertical
+      self.dirty = True
+      return True
+
+    if type(self.right) is Leaf and self.right.id == i:
+      self.right.touch()
+      self.vertical = not self.vertical
+      self.dirty = True
+      return True
+
+    if not self.left.transpose(i):
+      ok = self.right.transpose(i)
+      self.dirty = self.left.dirty or self.right.dirty
+      return ok

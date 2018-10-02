@@ -7,7 +7,7 @@ from pathlib import Path
 # print help thing
 def print_usage():
   print('\n'.join([
-    'Usage: python3 tile.py [reset | list | close | focus <direction> | swap <direction>]',
+    'Usage: python3 tile.py [reset | list | close | transpose | focus <direction> | swap <direction>]',
     '  direction = left | right | above | below']))
 
 if __name__ == '__main__':
@@ -45,6 +45,10 @@ if __name__ == '__main__':
   # close focused window
   elif option == 'close':
     manager.close()
+
+  # transpose focused window
+  elif option == 'transpose':
+    manager.transpose()
 
   # shift focus
   elif option == 'focus':

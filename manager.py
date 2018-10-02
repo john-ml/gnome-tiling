@@ -43,7 +43,18 @@ class Manager:
     self.render()
     return self
 
-  # apply some function(a:int, w:Tre, nearest:Window)
+  # transpose the active window
+  def transpose(self):
+    a = active_window()
+    if a is None:
+      return self
+    i, w = a
+
+    self.workspaces[w].transpose(i)
+    self.render()
+    return self
+
+  # apply some function(a:int, w:Tree, nearest:Window)
   #   a is the id of the active window
   #   w is the workspace
   #   nearest is the nearest window to the active window in the given direction
