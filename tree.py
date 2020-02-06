@@ -180,7 +180,7 @@ class Leaf(Tree):
     return (self.id, area) if area >= area2 else best
 
   def render(self, x=0.0, y=0.0, w=1.0, h=1.0) -> None:
-    if not self.dirty:
+    if False and not self.dirty:
       return
 
     # maximize if root node taking up the whole screen
@@ -193,12 +193,27 @@ class Leaf(Tree):
 
     # if not taking up entire screen, set window to proper size
     if not maximize:
+      print(f'x = {x}, y = {y}, w = {w}, h = {h}')
       run('wmctrl -i -r {} -e 0,{},{},{},{}'.format(
         hex(self.id),
-        int(x * screen_width),
-        int(top_bar_height + y * screen_height),
-        int(w * screen_width),
-        int(h * screen_height - top_bar_height)))
+        int(x*screen_width),
+        int(y*screen_height + top_bar_height),
+        int(w*screen_width),
+        int(h*screen_height - top_bar_height)))
+      # sometimes actually opaque region is different from xwininfo region (e.g. due to decoration).
+      # fix it.
+      rx, ry, rw, rh = xwininfo_region(self.id)
+      o = opaque_region(self.id)
+      print(rx, ry, rw, rh, o)
+      if o:
+        ox, oy, ow, oh = o
+        rx = rx - ox
+        ry = ry - oy
+        rw = rw + (rw - ow)
+        rh = rh + (rh - oh)
+        run('wmctrl -i -r {} -e 0,{},{},{},{}'.format(
+          hex(self.id),
+          int(rx), int(ry), int(rw), int(rh)))
 
     self.dirty = False
 
@@ -279,7 +294,7 @@ class Split(Tree):
     return self.right.largest(self.left.largest(best, w1, h1), w2, h2)
 
   def render(self, left=0.0, top=0.0, width=1.0, height=1.0) -> None:
-    if not self.dirty:
+    if False and not self.dirty:
       return
     (x1, y1, w1, h1), (x2, y2, w2, h2) = self.subrects(left, top, width, height)
     self.left.render(x1, y1, w1, h1)

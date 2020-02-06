@@ -31,6 +31,7 @@ if __name__ == '__main__':
   if len(sys.argv) == 1:
     print_usage()
     exit()
+
   option = sys.argv[1]
 
   # force tile all windows & initialize stash
@@ -40,7 +41,8 @@ if __name__ == '__main__':
     die()
 
   if not Path(stash).is_file():
-    print('Error: `{}` does not exist yet\nRun `python3 tile.py init` first'.format(stash))
+    print('Error: `{}` does not exist yet'.format(stash))
+    print('Run `python3 tile.py init` first')
     exit()
 
   with open(stash, 'r') as f:
@@ -96,7 +98,7 @@ if __name__ == '__main__':
 
   # open a terminal window
   elif option == 'terminal':
-    run('gnome-terminal')
+    run('x-terminal-emulator')
     manager.refresh()
 
   else:
