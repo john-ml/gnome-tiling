@@ -5,6 +5,8 @@ from typing import *
 Rectangle = Tuple[float, float, float, float]
 Window = Tuple[int, Rectangle]
 
+centroid = lambda x, y, w, h: (x + w/2, y + h/2)
+
 # a tree of splits
 class Tree:
   def __str__(self):
@@ -63,55 +65,54 @@ class Tree:
     pass
 
   # helper for left_of, right_of, above, & below
-  # return windows that satisfy a predicate f(x, y, w, h, x', y', w', h')
-  #   x, y, w, h is geometry of window with id i
-  #   x', y', w', h' is geometry of window being filtered
+  # return windows that satisfy a predicate f(x, y, x', y')
+  #   x, y is center of window with id i
+  #   x', y' is center of window being filtered
   def filter_on_window(self, i:int, pred) -> Set[Window]:
     if i not in self.ids():
       return set()
     windows = self.windows()
     #print('i =', i)
+    #print('centroids =', {(id, centroid(*geo)) for id, geo in windows})
     _, rect = next(filter(lambda a: fst(a) == i, windows))
-    result = set(filter(lambda a: fst(a) != i and pred(*rect, *snd(a)), windows))
+    result = set(filter(lambda a: fst(a) != i and pred(*centroid(*rect), *centroid(*snd(a))), windows))
     #print('result =', result)
     return result
 
   # windows to the left of the given id. empty set if the id is not in the tree
   def left_of(self, i:int) -> Set[Window]:
-    return self.filter_on_window(i, lambda x, y, w, h, x1, y1, w1, h1: x1 + w1 <= x)
+    return self.filter_on_window(i, lambda x, y, x1, y1: x1 <= x)
 
   # windows to the right of the given id
   def right_of(self, i:int) -> Set[Window]:
-    return self.filter_on_window(i, lambda x, y, w, h, x1, y1, w1, h1: x + w <= x1)
+    return self.filter_on_window(i, lambda x, y, x1, y1: x <= x1)
 
   # windows above id
   def above(self, i:int) -> Set[Window]:
-    return self.filter_on_window(i, lambda x, y, w, h, x1, y1, w1, h1: y1 + h1 <= y)
+    return self.filter_on_window(i, lambda x, y, x1, y1: y1 <= y)
 
   # windows below id
   def below(self, i:int) -> Set[Window]:
-    return self.filter_on_window(i, lambda x, y, w, h, x1, y1, w1, h1: y + h <= y1)
+    return self.filter_on_window(i, lambda x, y, x1, y1: y <= y1)
 
   # the nearest window to the given id, if it exists
-  # if direction = 'right', compute distance btwn right edge of window i & left of candidate window
-  # etc for the other directions
   def nearest(self, i:int, windows:Set[Window], direction:str) -> Union[Window, None]:
     if len(windows) == 0 or i not in self.ids():
       return None
 
     windows = self.windows()
-    _, (x, y, w, h) = next(filter(lambda a: fst(a) == i, windows))
+    _, geo = next(filter(lambda a: fst(a) == i, windows))
+    x, y = centroid(*geo)
     def distance_to(window):
-      _, (x1, y1, w1, h1) = window
-      if not direction in {'left', 'right', 'above', 'below'}:
-        raise ValueError('`{}` is not a valid direction'.format(direction))
-      d = abs(
-        x1 + w1 - x if direction == 'left' else
-        x1 - (x + w) if direction == 'right' else
-        (y1 + h1) - y if direction == 'above' else
-        y1 - (y + h))
-      return window, d
-
+      _, geo = window
+      x1, y1 = centroid(*geo)
+      bx, by = {
+        'left': (1, 2),
+        'right': (1, 2),
+        'above': (2, 1),
+        'below': (2, 1),
+      }[direction]
+      return window, bx*(x1 - x)**2 + by*(y1 - y)**2
     return option_map(fst, min(
       map(distance_to, filter(lambda w: fst(w) != i, windows)),
       key=snd, default=None))
