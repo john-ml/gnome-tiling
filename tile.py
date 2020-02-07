@@ -2,7 +2,6 @@
 from util import *
 from manager import *
 import sys
-from pathlib import Path
 
 # print help thing
 def print_usage():
@@ -21,22 +20,36 @@ def print_usage():
     '  workspace = [1-10]']))
 
 if __name__ == '__main__':
+  from pathlib import Path
+  import pickle
   # to store the window state
-  stash = str(Path.home()) + '/.tiling_configuration'
+  stash = str(Path.home()) + '/.tile/configuration'
+  # to store discrepancies
+  err = str(Path.home()) + '/.tile/errata'
 
-  def die():
-    open(stash, 'w').write(repr(manager))
-    exit()
+  try:
+    with open(err, 'rb') as f:
+      errata, incomplete_report = pickle.load(f)
+  except FileNotFoundError:
+    errata, incomplete_report = dict(), None
+  print(f'errata = {errata}')
+  print(f'incomplete_report = {incomplete_report}')
 
   if len(sys.argv) == 1:
     print_usage()
+    exit()
+
+  def die():
+    open(stash, 'w').write(repr(manager))
+    with open(err, 'wb') as f:
+      pickle.dump((errata, incomplete_report), f)
     exit()
 
   option = sys.argv[1]
 
   # force tile all windows & initialize stash
   if option == 'init':
-    manager = Manager.from_reality()
+    manager = Manager.from_reality(errata)
     manager.render()
     die()
 
@@ -46,7 +59,7 @@ if __name__ == '__main__':
     exit()
 
   with open(stash, 'r') as f:
-    manager = Manager.from_str(f.read())
+    manager = Manager.from_str(errata, f.read())
 
   # account for new windows/deleted windows
   if option == 'refresh':
@@ -95,6 +108,32 @@ if __name__ == '__main__':
       manager.move(int(sys.argv[2]) - 1)
     except ValueError as e:
       print(e)
+
+  elif option == 'open_report':
+    id = int(run("xwininfo | awk '/Window id/{print $4}'"), 16)
+    incomplete_report = xwininfo_region(id)
+
+  elif option == 'close_report':
+    if incomplete_report is None:
+      print('No report to close')
+      die()
+    id = int(run("xwininfo | awk '/Window id/{print $4}'"), 16)
+    oldx, oldy, oldw, oldh = incomplete_report
+    newx, newy, neww, newh = xwininfo_region(id)
+    print('old:', oldx, oldy, oldw, oldh)
+    print('new:', newx, newy, neww, newh)
+    dx = newx - oldx
+    dy = newy - oldy
+    dw = neww - oldw
+    dh = newh - oldh
+    print('delta:', dx, dy, dw, dh)
+    for s in wm_classes(id):
+      if s in errata:
+        x, y, w, h = errata[s] # add to old delta
+        errata[s] = (x + dx, y + dy, w + dw, h + dh)
+      else:
+        errata[s] = (dx, dy, dw, dh)
+    incomplete_report = None
 
   # open a terminal window
   elif option == 'terminal':

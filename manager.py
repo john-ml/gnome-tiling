@@ -4,7 +4,8 @@ from typing import *
 
 # a set of workspaces. essentially Dict[int, Tree]
 class Manager:
-  def __init__(self, workspaces : Dict[int, Tree]) -> None:
+  def __init__(self, errata, workspaces : Dict[int, Tree]) -> None:
+    self.errata = errata
     self.workspaces = workspaces
 
   def __str__(self) -> str:
@@ -135,10 +136,10 @@ class Manager:
 
   # apply the stored window geometries to the actual windows
   def render(self):
-    m = Manager.from_reality()
+    m = Manager.from_reality(self.errata)
     self.workspaces = m.workspaces
     for _, workspace in self.workspaces.items():
-      workspace.render()
+      workspace.render(self.errata)
     return self
 
   # discover differences between current state & stored stash, and update accordingly
@@ -164,17 +165,17 @@ class Manager:
 
   # construct from the actual current window configuration
   @staticmethod
-  def from_reality():
+  def from_reality(errata):
     # construct tiled trees for each workspace
     workspaces:Dict[int, Tree] = {}
     for workspace, ids in extract_windows().items():
       workspaces[workspace] = Tree.from_list(list(ids))
 
-    return Manager(workspaces)
+    return Manager(errata, workspaces)
 
   # construct from string representation returned by __repr__
   @staticmethod
-  def from_str(s:str):
+  def from_str(errata, s:str):
     lines = (a.split() for a in s.split('\n'))
 
     workspaces:Dict[int, Tree] = {}
@@ -183,4 +184,4 @@ class Manager:
       rpn = ' '.join(l[1:])
       workspaces[workspace] = Tree.from_rpn(rpn)
 
-    return Manager(workspaces)
+    return Manager(errata, workspaces)

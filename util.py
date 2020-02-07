@@ -22,6 +22,23 @@ screen_height = dimensions(1) - top_bar_height
 screen_pixels = screen_width * screen_height
 del dimensions
 
+# wm class given id
+def wm_classes(id:int) -> List[str]:
+  classes = run(f'xprop -id {hex(id)} | grep WM_CLASS')
+  return list(eval(classes[classes.index('=')+1:].strip())) # meh
+
+# sometimes, decorations make dimensions inaccurate.
+# get left border width, right border width, title bar width, and bottom border width
+def frame_extents(id:int) -> Union[Tuple[int, int, int, int], None]:
+  try:
+    l, r, t, b = tuple(map(int, run(' | '.join([
+      f'xprop -id {hex(id)}',
+      "grep '_FRAME_EXTENTS'",
+      "sed -E 's/.*_FRAME_EXTENTS.*= ([0-9]+), ([0-9]+), ([0-9]+), ([0-9]+)/\\1 \\2 \\3 \\4/'"])).split()))
+    return l, r, t, b
+  except ValueError:
+    return None
+
 # get x, y, w, h of a window using wmctrl
 def wmctrl_region(id:int) -> Tuple[int, int, int, int]:
   # {10} to pad resulting string to 10 chars long ==> 8 hex digits
@@ -45,18 +62,6 @@ def opaque_region(id:int) -> Union[Tuple[int, int, int, int], None]:
       f'xprop _NET_WM_OPAQUE_REGION -id {hex(id)}' +
       " | sed -E 's/.*= ([0-9]+), ([0-9]+), ([0-9]+), ([0-9]+)/\\1 \\2 \\3 \\4/'").split()))
     return x, y, w, h
-  except ValueError:
-    return None
-
-# sometimes, decorations make dimensions inaccurate.
-# get left border width, right border width, title bar width, and bottom border width
-def frame_extents(id:int) -> Union[Tuple[int, int, int, int], None]:
-  try:
-    l, r, t, b = tuple(map(int, run(' | '.join([
-      f'xprop -id {hex(id)}',
-      "grep '_FRAME_EXTENTS'",
-      "sed -E 's/.*_FRAME_EXTENTS.*= ([0-9]+), ([0-9]+), ([0-9]+), ([0-9]+)/\\1 \\2 \\3 \\4/'"])).split()))
-    return l, r, t, b
   except ValueError:
     return None
 
