@@ -136,8 +136,8 @@ class Manager:
 
   # apply the stored window geometries to the actual windows
   def render(self):
-    m = Manager.from_reality(self.errata)
-    self.workspaces = m.workspaces
+    #m = Manager.from_reality(self.errata)
+    #self.workspaces = m.workspaces
     for _, workspace in self.workspaces.items():
       workspace.render(self.errata)
     return self
